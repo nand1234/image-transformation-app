@@ -14,7 +14,7 @@ COPY requirements.txt .
 RUN pip3 install --no-cache-dir -r requirements.txt
 
 # Copy the source code and checkpoint files to the build stage
-COPY checkquality.py app.py detect_watermark.py run_real_esrgan.py /app/
+COPY checkquality.py app.py image_detection.py image_detection_resnet.py detect_watermark.py run_real_esrgan.py /app/
 COPY templates /app/templates/
 
 # Copy weights folder
