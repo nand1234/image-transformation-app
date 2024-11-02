@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Enhancement and Object Detection</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        .loader {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .upload-section {
+            margin: 20px;
+        }
+
+        .input-group {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;  /* Space between label and input */
+        }
+
+        label {
+            font-weight: 500;
+        }
+
+        select {
+            padding: 5px;
+            border-radius: 4px;
+        }
+
+        input[type="file"] {
+            margin: 10px 0;
+        }
+
+        #preview {
+            margin-top: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <h1>Image Enhancement and Object Detection</h1>
+    <div class="upload-section">
+        <div class="input-group">
+            <input type="file" id="imageInput" accept="image/*">
+        </div>
+        
+        <div class="input-group">
+            <label for="scaleSelect">Scale:</label>
+            <select id="scaleSelect">
+                <option value="2">2x</option>
+                <option value="3">3x</option>
+                <option value="4" selected>4x</option>
+            </select>
+        </div>
+        
+        <img id="preview" src="" style="max-width: 300px; display: none;">
+    </div>
+    <button onclick="processImage()">enhace Image</button>
+    <button onclick="checkImage()">check Image</button>
+    <div id="loader" class="loader"></div>
+    <div id="results" style="display: none;">
+        <h2>Enhanced Image</h2>
+        <img id="enhancedImage" style="max-width: 500px;">
+        <h2>Detected Objects</h2>
+        <img id="detectedImage" style="max-width: 500px;">
+        <h3>Detections:</h3>
+        <pre id="detections"></pre>
+        <h2>quality detections</h2>
+        <pre id="quality_detections"></pre>
+        <h2>watermark found</h2>
+        <pre id="watermark_result"></pre>
+    </div>
+    <script>
+        document.getElementById('imageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('preview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function processImage() {
+            const input = document.getElementById('imageInput');
+            const file = input.files[0];
+            if (!file) {
+                alert('Please select an image file.');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('scale', document.getElementById('scaleSelect').value);
+            
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            
+            axios.post('/process_image', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            }).then(response => {
+                const data = response.data;
+                document.getElementById('enhancedImage').src = 'data:image/png;base64,' + data.enhanced_image;
+                document.getElementById('results').style.display = 'block';
+            }).catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while processing the image.');
+            }).finally(() => {
+                document.getElementById('loader').style.display = 'none';
+            });
+        }
+
+        function checkImage() {
+            const input = document.getElementById('imageInput');
+            const file = input.files[0];
+            if (!file) {
+                alert('Please select an image file.');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            
+            axios.post('/check_image', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            }).then(response => {
+                const data = response.data;
+                document.getElementById('detectedImage').src = 'data:image/png;base64,' + data.detected_image;
+                document.getElementById('detections').textContent = JSON.stringify(data.detections, null, 2);
+                document.getElementById('quality_detections').textContent = JSON.stringify(data.quality_detections, null, 2);
+                document.getElementById('watermark_result').textContent = JSON.stringify(data.watermark_result, null, 2);
+                document.getElementById('results').style.display = 'block';
+            }).catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while processing the image.');
+            }).finally(() => {
+                document.getElementById('loader').style.display = 'none';
+            });
+        }
+    </script>
+</body>
+</html>
